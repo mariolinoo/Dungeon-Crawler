@@ -1,6 +1,7 @@
 import random
 import os
 
+
 #Drunk Walk startet nicht immer in der Mitte des Feldes (Mitte des Feldes ist manchmal verbaut)
 """Erstellt automatisch Dungeons"""
 
