@@ -3,6 +3,7 @@ import os.path
 import PySimpleGUI as sg
 import glob
 import shutil
+import name_fill
 
 class GUI:
     window = None
@@ -58,9 +59,12 @@ def content_display(folder, content, left):
         if left:
             GUI.window["Mov"].Update(disabled=False)
             GUI.window["Del"].Update(disabled=False)
+            GUI.window["Zerofill"].Update(disabled=False)
+
         else:
             GUI.window["Mov Back"].Update(disabled=False)
             GUI.window["Del 2"].Update(disabled=False)
+            GUI.window["Zerofill 2"].Update(disabled=False)
 
 def delete_file(folder, content):
     name = os.path.join(folder, content)
@@ -92,7 +96,7 @@ def main():
 
     layout =[
                 [left, middle_left, middle_right, right],
-                [sg.Button("Del", disabled =True, size=GUI.button_size), sg.Button("Del 2", disabled =True, size=GUI.button_size), sg.Button("Mov", disabled=True, size=GUI.button_size), sg.Button("Mov Back", disabled=True, size=GUI.button_size)],
+                [sg.Button("Del", disabled =True, size=GUI.button_size), sg.Button("Del 2", disabled =True, size=GUI.button_size), sg.Button("Mov", disabled=True, size=GUI.button_size), sg.Button("Mov Back", disabled=True, size=GUI.button_size), sg.Button("Zerofill", disabled=True, size=GUI.button_size), sg.Button("Zerofill 2", disabled=True, size=GUI.button_size)],
                 [sg.Cancel(key="Cancel", size=GUI.button_size), sg.Ok(key="Ok", size=GUI.button_size)],
             ]
     GUI.window = sg.Window('Folderbrowser', layout)
@@ -105,6 +109,8 @@ def main():
         GUI.window["Del 2"].Update(disabled=True)
         GUI.window["Mov"].Update(disabled=True)
         GUI.window["Mov Back"].Update(disabled=True)
+        GUI.window["Zerofill"].Update(disabled=True)
+        GUI.window["Zerofill 2"].Update(disabled=True)
 
         #Folder ausgewählt
         if event in (sg.WIN_CLOSED, "Cancel"):
@@ -142,6 +148,14 @@ def main():
             move_file(old_path, new_path)
             update_file_list(values["folder"], values["new_folder"])
             GUI.window["canvas_right"].DrawRectangle((0, 0), (100, 100), line_color='white', fill_color='white')
+
+        if event == "Zerofill":
+            name_fill.main(values["folder"])
+            update_file_list(values["folder"], values["new_folder"])
+
+        if event == "Zerofill 2":
+            name_fill.main(values["new_folder"])
+            update_file_list(values["folder"], values["new_folder"])
 
         #Filebrowser fertig
         if event == "Ok":
