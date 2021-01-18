@@ -2,7 +2,8 @@ from roll import wurfel
 import random
 import PySimpleGUI as sg
 import sys
-import dungeon_creater_01
+import Dungeon_creator
+
 import os
 import glob 
 
