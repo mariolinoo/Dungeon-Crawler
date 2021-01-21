@@ -3,6 +3,7 @@ import os.path
 import PySimpleGUI as sg
 import glob
 import name_fill
+import matplotlib.pyplot as plt
 
 sg.SetOptions(font = ("arial", 10)) #Setzte Einstellungen für das Simplegui global an dieser Stelle
 
@@ -148,9 +149,6 @@ def index_calc(click_x, click_y):
 
     i = click_row * GUI.max_cols + click_col
 
-    """print("geklicktes Thumnail:", i)
-    print(GUI.file_names)
-    print("maximaler Index: ", GUI.file_num)"""
     if i > (GUI.file_num - 1):
         sg.popup_ok("Please select a valid thumbnail")
         return None
@@ -162,6 +160,7 @@ def paint_preview(chosen_thumbnail_index):
 
     c.DrawRectangle((0, 0), GUI.preview_canvas, line_color='white', fill_color='white')
 
+    GUI.selected_file_path = GUI.complete_filenames[chosen_thumbnail_index]
     with open(GUI.complete_filenames[chosen_thumbnail_index]) as dungeon_file:
         text = dungeon_file.readlines()
 
@@ -187,8 +186,31 @@ def paint_preview(chosen_thumbnail_index):
                 end = (tx + 1, ty + 1)
                 c.DrawRectangle(start, end, line_color='purple', fill_color='purple')
 
-    GUI.current_fill_ratio = round((GUI.current_max_y * GUI.current_max_x) / ground, 2)
+    GUI.current_fill_ratio = round(100*(ground/(GUI.current_max_y * GUI.current_max_x)), 2) #gibt in Prozent die Ratio zw Boden und Wänden zurück
     print("ratio: ", GUI.current_fill_ratio)
+
+def draw_statistic():
+    c = GUI.window["statistic"]
+    c.DrawRectangle((0, 1), (1,0), line_color='#777777', fill_color='#777777')
+    for i in range(0,10, 2):
+        px_i = i/10
+        if i == 0:
+            c.draw_text(text="Ground in %", location=(px_i+0.1,0.3), font=("arial", 12), color = "purple", angle = 90)
+        if i == 2:
+            start = (px_i, GUI.current_fill_ratio/100)  #Top left
+            end = ( (px_i+0.2), 0)                      #Bottom right
+            c.DrawRectangle(start, end, line_color='Black', fill_color='White')
+            c.draw_text(text=f"{round(GUI.current_fill_ratio,1)}%", location=(px_i + 0.1, 0.15), font=("arial", 11), color="Black", angle=90)
+        if i == 4:
+            c.draw_text(text="Walls in %", location=(px_i+0.1,0.3), font=("arial", 12), color = "purple", angle = 90)
+        if i == 6:
+            start = (px_i, 1 - GUI.current_fill_ratio/100)  #Top left
+            end = ( (px_i+0.2), 0)                      #Bottom right
+            c.DrawRectangle(start, end, line_color='Black', fill_color='Black')
+            c.draw_text(text=f"{round(100-GUI.current_fill_ratio, 1)}%", location=(px_i + 0.1, 0.15), font=("arial", 11), color="White", angle=90)
+
+
+
 
 
 def main():
@@ -220,9 +242,10 @@ def main():
     right = sg.Column   ([
                             [sg.Graph(background_color="#FFFFFF", canvas_size= GUI.preview_canvas, graph_bottom_left= (0,GUI.max_y),graph_top_right=(GUI.max_x, 0), key="preview")],
                             [sg.Text("Selected File:", font = ("arial", 15))],
-                            [sg.Text(GUI.selected_file_path[len(path_to_folder) + 1:], key = "file name")],
-                            [sg.Text(GUI.selected_file_path, key = "file path")],
-                            [sg.Text(f"Infos: \nMax x: {GUI.current_max_x}\nMax y: {GUI.current_max_y}\nDugeon ratio: {GUI.current_fill_ratio}", key = "file info", size = (35,5))],
+                            [sg.Input(GUI.selected_file_path[len(path_to_folder) + 1:], disabled = True, key = "file name", size = (20,1))],
+                            [sg.Input(GUI.selected_file_path, key = "file path", disabled = True, size = (70,1))],
+                            [sg.Text(f"Infos: \nMax x: {GUI.current_max_x}\nMax y: {GUI.current_max_y}\nDugeon ratio: {GUI.current_fill_ratio}%", key = "file info", size = (35,5))],
+                            [sg.Graph(background_color="#777777", canvas_size= (0.4*GUI.preview_canvas[0],0.4*GUI.preview_canvas[1]), graph_bottom_left= (0,0),graph_top_right=(1, 1), key="statistic")],
                             [sg.Cancel(size=GUI.button_size)],
                         ], vertical_alignment = "top"
                         )
@@ -249,10 +272,12 @@ def main():
             if chosen_thumbnail_index is None:
                 continue
             paint_preview(chosen_thumbnail_index)
+            print(f"Filename:{GUI.selected_file_path[len(path_to_folder) + 1:]} and Path: {GUI.selected_file_path}\n")
             GUI.window["file name"].Update(GUI.selected_file_path[len(path_to_folder) + 1:])
             GUI.window["file path"].Update(GUI.selected_file_path)
             GUI.window["file info"].Update(f"Infos: \nMax x: {GUI.current_max_x}\nMax y: {GUI.current_max_y}\nDugeon ratio: {GUI.current_fill_ratio}")
-
+            #Statistik
+            draw_statistic()
 
     GUI.window.close()
 
