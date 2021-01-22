@@ -79,9 +79,9 @@ def wurfel(dicestr="1d6", verbose=True, pretty=True):
 
 if __name__=="__main__":
     for _ in range(10):
-        zahl, string= wurfel("3d6+2")
+        zahl, string= wurfel("3D10+2")
         print(f"{string}")
     for _ in range(10):   
-        zahl, string= wurfel("3D6+2")
+        zahl, string= wurfel("3d20+2")
         print(f"{string}")
     
