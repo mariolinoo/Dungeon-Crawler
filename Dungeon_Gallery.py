@@ -190,6 +190,7 @@ def paint_preview(chosen_thumbnail_index):
     print("ratio: ", GUI.current_fill_ratio)
 
 def draw_statistic():
+    #Plot mit Graph funktion
     c = GUI.window["statistic"]
     c.DrawRectangle((0, 1), (1,0), line_color='#777777', fill_color='#777777')
     for i in range(0,10, 2):
@@ -214,7 +215,7 @@ def draw_statistic():
 
 
 def main():
-    #ToDo Abfangen des Cancels bei de Progressbar, Commandofeld, Hervorheben des gewählten Thumbnails, optional(paintroutine in eine eigene Funktion auslagern), ausgewählte Filenames und Pfade werden nicht angezeigt
+    #ToDo Abfangen des Cancels bei de Progressbar, Commandofeld, Hervorheben des gewählten Thumbnails, optional(paintroutine in eine eigene Funktion auslagern), ausgewählte Filenames und Pfade werden nicht angezeigt, Filemanipulation
     while True:
     #Abfrage nach dem Zielordner
         path_to_folder = None
