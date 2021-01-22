@@ -118,11 +118,14 @@ def main(duell=True):
                          sg.Input(default_text="1d6+0", key="a_to_defend", size=GUI.input_bar_size)],
                         [sg.Text("Enter (dice) protection:", size = GUI.enter_text_size),
                          sg.Input(default_text="1d6+0", key="a_protection", size=GUI.input_bar_size)],
+                        [sg.Button("pull values\nfrom table", key="pull_left", size=GUI.button_size)],
+                        [sg.Button("push values\nto table", key="push_left", size=GUI.button_size)],
                     ], size = GUI.column_size
                     )
 
     middle = sg.Column  (
                         [
+
                             [sg.Text("Statistik kommt hier her")],
                             [sg.Text("defined monsters:")],
                             [sg.Table(values=GUI.monster_classes,
@@ -131,13 +134,15 @@ def main(duell=True):
                                       col_widths=[15, 5, 5, 5,  5, 5],
                                       display_row_numbers=True,
                                       vertical_scroll_only=True,
-                                      size=(70, 40),
+                                      size=(70, 20),
+                                      alternating_row_color= "#AAAAAA",
                                       justification="left",
                                       enable_events=True,
                                       select_mode = sg.TABLE_SELECT_MODE_BROWSE,
                                       #select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
                                       key="monsters"),
                              ],
+
 
                         ], size = GUI.column_size
                         )
@@ -156,6 +161,8 @@ def main(duell=True):
                              sg.Input(default_text="1d6+0", key="b_to_defend", size=GUI.input_bar_size)],
                             [sg.Text("Enter (dice) protection:", size=GUI.enter_text_size),
                              sg.Input(default_text="1d6+0", key="b_protection", size=GUI.input_bar_size)],
+                            [sg.Button("pull values\nfrom table", key="pull_right", size=GUI.button_size)],
+                            [sg.Button("push values\nto table", key="push_right", size=GUI.button_size)],
 
                         ], size=GUI.column_size
     )
@@ -163,7 +170,7 @@ def main(duell=True):
                     [left, middle, right],
                     [sg.Output(size = (120, 20))],
                     [sg.Button("Push values", size=GUI.button_size)],
-                    [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size)],
+                    [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("save table\nto monsters.csv", key="save_table", size=GUI.button_size)],
                 ]
 
     GUI.window = sg.Window('fight_simulator', layout)
