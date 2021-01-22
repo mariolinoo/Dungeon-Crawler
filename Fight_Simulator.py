@@ -168,7 +168,7 @@ def main(duell=True):
     )
     layout =    [
                     [left, middle, right],
-                    [sg.Output(size = (120, 20))],
+                    #[sg.Output(size = (120, 20))],
                     [sg.Button("Push values", size=GUI.button_size)],
                     [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("save table\nto monsters.csv", key="save_table", size=GUI.button_size)],
                 ]
@@ -199,6 +199,47 @@ def main(duell=True):
                     print("Bob won")
             else:
                 fight(alice, bob)
+
+        if event in ( "pull_left", "pull_right"):
+            prefix = "a_" if event == "pull_left" else "b_"
+            # überprüfuen ob im table etwas selektiert ist
+            if len(values["monsters"]) == 0:
+                sg.popup_ok("select a monster in the list first")
+                continue
+            selected_row = values["monsters"][0] # zeilennummer
+            print(selected_row)
+            fieldnames = ["name", "hp", "to_hit", "dmg", "to_defend", "protection"]
+            for i, field in enumerate(fieldnames):
+                print(GUI.monster_classes[selected_row][i])
+                GUI.window[prefix+field].update(GUI.monster_classes[selected_row][i])
+
+        if event in ("push_left", "push_right"):
+            prefix = "a_" if event == "push_left" else "b_"
+            fieldnames = ["name", "hp", "to_hit", "dmg", "to_defend", "protection"]
+            # überprüfen ob name schon in tabelle drin ist
+            myname = values[prefix+"name"]
+            already_inside = False
+            for y, line in enumerate(GUI.monster_classes):
+                if line[0] == myname:
+                    already_inside = True
+                    print("found it in table")
+                    break # found name, it's already in table
+            else:  # never have breaked out of loop
+                print("did not found in table")
+                already_inside = False
+            # update monster_classes
+            if already_inside:
+                for i, field in enumerate(fieldnames):
+                    print("y,i", y, i)
+
+                    GUI.monster_classes[y][i] = values[prefix+field][i]
+            else:
+                GUI.monster_classes.append([values[prefix + field] for field in fieldnames])
+
+            # update table element
+            GUI.window["monsters"].Update(GUI.monster_classes)
+
+
 
 
 
