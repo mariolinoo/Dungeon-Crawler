@@ -8,13 +8,11 @@ def strike(attacker, defender):
     to_defend, to_defend_string = wurfel(defender.to_defense)
     dmg, dmg_string = wurfel(attacker.dmg)
     prot, prot_string = wurfel(defender.protection)
-    print \
-        (f"{attacker.name} swings with {to_hit_string} at {defender.name} with defense chance {to_defend_string}")
+    print(f"{attacker.name} swings with {to_hit_string} at {defender.name} with defense chance {to_defend_string}")
     if to_defend >= to_hit:
         print("Attack failed")
         return
-    print \
-        (f"{attacker.name} hits with {dmg_string} {defender.name} with {prot_string} armor")
+    print(f"{attacker.name} hits with {dmg_string} {defender.name} with {prot_string} armor")
     if dmg <= prot:
         print("No damage")
         return
@@ -106,7 +104,7 @@ def main(duell=True):
     left = sg.Column(
                     [
                         [sg.Text("Enter name:", size = GUI.enter_text_size),
-                         sg.Input(default_text = "alice", key = "a_name", size = GUI.input_bar_size)],
+                         sg.Input(default_text = "Alice", key = "a_name", size = GUI.input_bar_size)],
                         [sg.Text("Enter hp:", size = GUI.enter_text_size),
                          sg.Slider([1, 100], orientation="h", default_value=10, resolution=1,
                                    size=(22, 15), key="a_hp")],
@@ -131,10 +129,10 @@ def main(duell=True):
                             [sg.Table(values=GUI.monster_classes,
                                       headings=["name", "hp", "to_hit", "dmg", "to_defense", "protection"],
                                       auto_size_columns=False,
-                                      col_widths=[15, 5, 5, 5,  5, 5],
+                                      col_widths=[15, 4, 7, 7,  7, 7],
                                       display_row_numbers=True,
                                       vertical_scroll_only=True,
-                                      size=(70, 20),
+                                      size=(80, 20),
                                       alternating_row_color= "#AAAAAA",
                                       justification="left",
                                       enable_events=True,
@@ -149,7 +147,7 @@ def main(duell=True):
     right = sg.Column  (
                         [
                             [sg.Text("Enter name:", size=GUI.enter_text_size),
-                             sg.Input(default_text="bob", key="b_name", size=GUI.input_bar_size)],
+                             sg.Input(default_text="Bob", key="b_name", size=GUI.input_bar_size)],
                             [sg.Text("Enter hp:", size=GUI.enter_text_size),
                              sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
                                        size=(22, 15), key="b_hp")],
@@ -230,9 +228,14 @@ def main(duell=True):
             # update monster_classes
             if already_inside:
                 for i, field in enumerate(fieldnames):
-                    print("y,i", y, i)
-
-                    GUI.monster_classes[y][i] = values[prefix+field][i]
+                    #print("y,i, field", y, i, field)
+                    #print("zeile:", GUI.monster_classes[y])
+                    #print("form-value:", values[prefix+field])
+                    if type(GUI.monster_classes[y][i]) != str:
+                        new_value = int(values[prefix+field])
+                    else:
+                        new_value = values[prefix+field]
+                    GUI.monster_classes[y][i] = new_value
             else:
                 GUI.monster_classes.append([values[prefix + field] for field in fieldnames])
 
