@@ -45,16 +45,12 @@ class Monster:
     #Classatribute
     number=0 #Monsterid
 
-    def __init__(self, x=1, y=1, hp=10, logo='M', gui_number=0): #self ist durch constructor definiert und kann beliebig gewählt werden
+    def __init__(self, gui_number=0): #self ist durch constructor definiert und kann beliebig gewählt werden
         self.number=Monster.number
         Monster.number+=1
         Game.zoo.append(self)
         self.gui_number = gui_number
-        self.hp=hp
         self.name = "nix"
-        self.x=x
-        self.y=y
-        self.logo=logo
         self.to_hit="1d2"
         self.dmg="1D5"
         self.to_defense="1D2"
@@ -92,6 +88,10 @@ class GUI():
     input_bar_size = (26,1)
     enter_text_size = (35,1)
     values = None
+    monster_classes = [
+            ["Alice", 10, "1d3+0","1d3+0","1d3+0","1d3+0"],
+            ["Bob", 10, "1d3+0", "1d3+0", "1d3+0", "1d3+0"],
+    ]
 
 
 def main(duell=True):
@@ -124,6 +124,21 @@ def main(duell=True):
     middle = sg.Column  (
                         [
                             [sg.Text("Statistik kommt hier her")],
+                            [sg.Text("defined monsters:")],
+                            [sg.Table(values=GUI.monster_classes,
+                                      headings=["name", "hp", "to_hit", "dmg", "to_defense", "protection"],
+                                      auto_size_columns=False,
+                                      col_widths=[15, 5, 5, 5,  5, 5],
+                                      display_row_numbers=True,
+                                      vertical_scroll_only=True,
+                                      size=(70, 40),
+                                      justification="left",
+                                      enable_events=True,
+                                      select_mode = sg.TABLE_SELECT_MODE_BROWSE,
+                                      #select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
+                                      key="monsters"),
+                             ],
+
                         ], size = GUI.column_size
                         )
     right = sg.Column  (
@@ -146,7 +161,7 @@ def main(duell=True):
     )
     layout =    [
                     [left, middle, right],
-                    #[sg.Output(size = (120, 20))],
+                    [sg.Output(size = (120, 20))],
                     [sg.Button("Push values", size=GUI.button_size)],
                     [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size)],
                 ]
