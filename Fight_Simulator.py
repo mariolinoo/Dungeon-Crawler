@@ -56,24 +56,6 @@ class Monster:
         #self.get_attributes_from_gui()
         self.post_init()
 
-    def get_attributes_from_gui(self):
-        """get attributes from left gui (self.gui-number ==0) or from right gui (self.gui-number==1)"""
-        prefix = "a_" if self.gui_number == 0 else "b_"
-        for fieldname in ["name",
-                          "hp",
-                          "to_hit",
-                          "dmg",
-                          "to_defend",
-                          "protection",
-                          ]:
-            #print("processing:", fieldname)
-            #print("value:", GUI.values)
-            self.__setattr__(fieldname, GUI.values[prefix+fieldname])
-        print("fertig!")
-        #print("self dict")
-        #print(self.__dict__)
-
-
     def post_init(self):
         pass
 
@@ -83,8 +65,9 @@ class GUI():
     window = None
     column_size = (600,400)
     button_size = (7,2)
+    extended_menue_button_size = (1, 1)
     input_bar_size = (26,1)
-    enter_text_size = (35,1)
+    enter_text_size = (25,1)
     values = None
     monster_classes = [
             ["Alice", 10, "1d3+0","1d3+0","1d3+0","1d3+0"],
@@ -93,6 +76,7 @@ class GUI():
 
 
 def main(duell=True):
+    #ToDo Statistische Auswertung der Kämpfe, Dice zusammenstellen,
     #alice=Alice()
     #bob=Bob()
     Monster(gui_number=0)
@@ -109,7 +93,8 @@ def main(duell=True):
                          sg.Slider([1, 100], orientation="h", default_value=10, resolution=1,
                                    size=(22, 15), key="a_hp")],
                         [sg.Text("Enter (dice) hit possibility:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_to_hit", size=GUI.input_bar_size)],
+                         sg.Input(default_text="1d6+0", key="a_to_hit", size=GUI.input_bar_size),
+                         sg.Button("...", key="left_hit_dice", size = GUI.extended_menue_button_size)],
                         [sg.Text("Enter (dice) damage:", size = GUI.enter_text_size),
                          sg.Input(default_text="1d6+0", key="a_dmg", size=GUI.input_bar_size)],
                         [sg.Text("Enter (dice) defense possibility:", size = GUI.enter_text_size),
@@ -167,9 +152,27 @@ def main(duell=True):
     layout =    [
                     [left, middle, right],
                     #[sg.Output(size = (120, 20))],
-                    [sg.Button("Push values", size=GUI.button_size)],
-                    [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("save table\nto monsters.csv", key="save_table", size=GUI.button_size)],
+                    [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("save table\nto .csv", key="save_table", size=GUI.button_size),
+                     sg.Button("load table\nfrom .csv", key="load_table", size=GUI.button_size), sg.Button("Delete table", key="delete_table", size=GUI.button_size),
+                     sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size)],
                 ]
+
+    layout_pop =    [
+                        [sg.Text("Number of dice")],
+                        [sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
+                                       size=(22, 15), key="dice_nr")],
+                        [sg.Text("Sides per die")],
+                        [sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
+                                       size=(22, 15), key="dice_sides")],
+                        [sg.Text("Bonus value")],
+                        [sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
+                                       size=(22, 15), key="dice_bonus")],
+
+                        [sg.Text("Your dice is: .....", font = ("arial", 24), key  = "dice_result")],
+
+                        [sg.Ok(size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("Update", key = "update_dice", size = GUI.button_size)],
+
+                    ]
 
     GUI.window = sg.Window('fight_simulator', layout)
     GUI.window.finalize()
@@ -180,10 +183,6 @@ def main(duell=True):
         GUI.values = values
         if event == sg.WIN_CLOSED or event == "Cancel":
             break
-        if event == "Push values":
-            for m in Game.zoo:
-                m.get_attributes_from_gui()
-                print(m, m.__dict__)
 
         if event == "Run":
             if duell:
@@ -237,10 +236,82 @@ def main(duell=True):
                         new_value = values[prefix+field]
                     GUI.monster_classes[y][i] = new_value
             else:
-                GUI.monster_classes.append([values[prefix + field] for field in fieldnames])
+                append_list = []
+                for x,field in enumerate(fieldnames):
+                    if type(values[prefix + field]) == str:
+                        append_list.append(values[prefix + field])
+                    else:
+                        append_list.append(int(values[prefix + field]))
+
+                GUI.monster_classes.append(append_list)
 
             # update table element
             GUI.window["monsters"].Update(GUI.monster_classes)
+
+        if event == "load_table":
+            load_file = sg.popup_get_file("Please select file to load in to the monster table")
+            print(load_file)
+
+            with open (load_file, "r") as f:
+                GUI.monster_classes = []
+                for line in f:
+                    clean_line = []
+                    for x,field in enumerate(line.split(",")):
+                        if x != 1:
+                            clean_line.append(field.strip()[1:-1])
+
+                        else:
+                            clean_line.append(int(field.strip()))
+                    GUI.monster_classes.append(clean_line)
+
+            GUI.window["monsters"].Update(GUI.monster_classes)
+
+
+        if event == "save_table":
+            save_cmd = sg.popup_yes_no("Save to the default file?")
+
+            #Standard file
+            save_filename = "standard_table.csv"
+
+            #Auswahl des eigenene files
+            if save_cmd == "No":
+                sg.popup_notify("You have to create the file on your own")
+                # Überschreibt den standardfile, falls eigenes ausgesucht wird
+                save_filename = sg.popup_get_file("Please select or create file for monster table (.csv format)")
+                if save_filename is None:
+                    sg.PopupOK("Incorrect file description")
+                    continue
+            #Öffnen des Files und abspeichern der Tabelle
+            with open (save_filename, "w") as f:
+                for line in GUI.monster_classes:
+                    for field in line:
+                        if type(field) is str:
+                            f.write("'"+field+"'") #csv dateien brauchen strings in single quotes
+                        else:
+                            f.write(str(field))
+                        f.write(",")
+                    f.write("\n")
+
+        if event == "delete_table":
+            GUI.monster_classes = []
+            GUI.window["monsters"].Update(GUI.monster_classes)
+
+        if event == "delete_entrie":
+            # überprüfuen ob im table etwas selektiert ist
+            if len(values["monsters"]) == 0:
+                sg.popup_ok("select a monster in the list first")
+                continue
+
+            print(values["monsters"][0])
+
+            GUI.monster_classes.pop(values["monsters"][0])
+            GUI.window["monsters"].Update(GUI.monster_classes)
+
+
+
+
+
+
 
 
 
