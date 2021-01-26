@@ -2,10 +2,62 @@ from roll import wurfel
 import PySimpleGUI as sg
 sg.SetOptions(font = ("arial", 12))
 
+class Game:
+    """Container für globale Variablen"""
+    zoo = []  # Monsterliste
+    graveyard = []
+    current_level = []
+
+
+class Monster:
+    """Generic Monsterclass"""
+    #Classatribute
+    number=0 #Monsterid
+
+    def __init__(self, gui_number=0): #self ist durch constructor definiert und kann beliebig gewählt werden
+        self.number=Monster.number
+        Monster.number+=1
+        Game.zoo.append(self)
+        self.hp = 10
+        self.gui_number = gui_number
+        self.name = "nix"
+        self.to_hit="1d2"
+        self.dmg="1D5"
+        self.to_defend="1D2"
+        self.protection="1d2"
+
+    def get_attributes_from_gui(self):
+        prefix = "a_" if self.gui_number == 0 else "b_"
+
+        for suffix in   [
+                            "name",
+                            "hp",
+                            "to_hit",
+                            "dmg",
+                            "to_defend",
+                            "protection",
+                        ]:
+            self.__setattr__(suffix, GUI.values[prefix + suffix])
+
+        #print(self.__dict__)
+
+
+class GUI():
+    window = None
+    column_size = (600,400)
+    button_size = (7,2)
+    extended_menue_button_size = (1, 1)
+    input_bar_size = (26,1)
+    enter_text_size = (25,1)
+    values = None
+    monster_classes = [
+            ["Alice", 10, "1d3+0","1d3+0","1d3+0","1d3+0"],
+            ["Bob", 10, "1d3+0", "1d3+0", "1d3+0", "1d3+0"],
+    ]
 
 def strike(attacker, defender):
     to_hit, to_hit_string = wurfel(attacker.to_hit)
-    to_defend, to_defend_string = wurfel(defender.to_defense)
+    to_defend, to_defend_string = wurfel(defender.to_defend)
     dmg, dmg_string = wurfel(attacker.dmg)
     prot, prot_string = wurfel(defender.protection)
     print(f"{attacker.name} swings with {to_hit_string} at {defender.name} with defense chance {to_defend_string}")
@@ -31,76 +83,107 @@ def fight(attacker, defender):
     if attacker.hp <= 0:
         print(f"{attacker.name} is dead")
 
-class Game:
-    """Container für globale Variablen"""
-    zoo = []  # Monsterliste
-    graveyard = []
-    current_level = []
+def string_constructor(dd):
 
+    string = ""
+    string = str(dd["dice"])
+    string += "D" if dd["reroll"] else "d"
+    string += str(dd["sides"])
+    string += "+" if dd["correction"] > 0 else "-"
+    string += str(abs(dd["correction"]))
 
-class Monster:
-    """Generic Monsterclass"""
-    #Classatribute
-    number=0 #Monsterid
+    return string
 
-    def __init__(self, gui_number=0): #self ist durch constructor definiert und kann beliebig gewählt werden
-        self.number=Monster.number
-        Monster.number+=1
-        Game.zoo.append(self)
-        self.gui_number = gui_number
-        self.name = "nix"
-        self.to_hit="1d2"
-        self.dmg="1D5"
-        self.to_defense="1D2"
-        self.protection="1d2"
-        #self.get_attributes_from_gui()
-        self.post_init()
+def dice_parameters(prefix, suffix):
 
-    def post_init(self):
-        pass
+    layout_pop = [
+                    [sg.Text("Number of dice")],
+                    [sg.Slider([0, 100], orientation="h", default_value=10, resolution=1,
+                               size=(22, 15), key="dice_dice", enable_events=True)],
 
+                    [sg.Text("")],
+                    [sg.Checkbox(text="Reroll", key="dice_reroll", size=GUI.button_size
+                                 , enable_events=True)],
+                    [sg.Text("")],
 
+                    [sg.Text("Sides per die")],
+                    [sg.Slider([2, 100], orientation="h", default_value=10, resolution=1,
+                               size=(22, 15), key="dice_sides", enable_events=True)],
 
-class GUI():
-    window = None
-    column_size = (600,400)
-    button_size = (7,2)
-    extended_menue_button_size = (1, 1)
-    input_bar_size = (26,1)
-    enter_text_size = (25,1)
-    values = None
-    monster_classes = [
-            ["Alice", 10, "1d3+0","1d3+0","1d3+0","1d3+0"],
-            ["Bob", 10, "1d3+0", "1d3+0", "1d3+0", "1d3+0"],
-    ]
+                    [sg.Text("Bonus value")],
+                    [sg.Slider([-100, 100], orientation="h", default_value=10, resolution=1,
+                               size=(22, 15), key="dice_correction", enable_events=True)],
+
+                    [sg.Text("", font=("arial", 24), key="dice_result", size=(15, 1))],
+
+                    [sg.Ok(size=GUI.button_size), sg.Cancel(size=GUI.button_size)],
+                ]
+
+    name = GUI.values[prefix + suffix]
+    dd = {}
+    dd["dice"], dd["reroll"], dd["sides"], dd["correction"] = wurfel(name, data = True)
+
+    window_pop = sg.Window('dice_constructor', layout_pop)
+
+    window_pop.finalize()
+
+    for suffix in dd.keys():
+        string = "dice_" + suffix
+        window_pop[string].Update(value = dd[suffix])
+
+    while True:
+        event, values = window_pop.read()
+
+        for suffix in dd.keys():
+            string = "dice_" + suffix
+            dd[suffix] = int(values[string])
+
+        dice_string = string_constructor(dd)
+
+        print(dice_string)
+
+        window_pop["dice_result"].Update(dice_string)
+
+        if event == sg.WIN_CLOSED or event == "Cancel":
+            break
+
+        if event == "Ok":
+            window_pop.close()
+            return dice_string
+
+    window_pop.close()
+
+    return
 
 
 def main(duell=True):
-    #ToDo Statistische Auswertung der Kämpfe, Dice zusammenstellen,
-    #alice=Alice()
-    #bob=Bob()
-    Monster(gui_number=0)
-    Monster(gui_number=1)
-    for m in Game.zoo:
-        print(m, m.__dict__)
-
+    #ToDo Statistische Auswertung der Kämpfe, Dice zusammenstellen, Lösung für den kampf bis zum tod
 
     left = sg.Column(
                     [
                         [sg.Text("Enter name:", size = GUI.enter_text_size),
                          sg.Input(default_text = "Alice", key = "a_name", size = GUI.input_bar_size)],
+
                         [sg.Text("Enter hp:", size = GUI.enter_text_size),
                          sg.Slider([1, 100], orientation="h", default_value=10, resolution=1,
                                    size=(22, 15), key="a_hp")],
+
                         [sg.Text("Enter (dice) hit possibility:", size = GUI.enter_text_size),
                          sg.Input(default_text="1d6+0", key="a_to_hit", size=GUI.input_bar_size),
-                         sg.Button("...", key="left_hit_dice", size = GUI.extended_menue_button_size)],
+                         sg.Button("...", key="a_to_hit_dice", size = GUI.extended_menue_button_size)],
+
                         [sg.Text("Enter (dice) damage:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_dmg", size=GUI.input_bar_size)],
+                         sg.Input(default_text="1d6+0", key="a_dmg", size=GUI.input_bar_size),
+                         sg.Button("...", key="a_dmg_dice", size = GUI.extended_menue_button_size)],
+
                         [sg.Text("Enter (dice) defense possibility:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_to_defend", size=GUI.input_bar_size)],
+                         sg.Input(default_text="1d6+0", key="a_to_defend", size=GUI.input_bar_size),
+                         sg.Button("...", key="a_to_defend_dice", size = GUI.extended_menue_button_size)],
+
                         [sg.Text("Enter (dice) protection:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_protection", size=GUI.input_bar_size)],
+                         sg.Input(default_text="1d6+0", key="a_protection", size=GUI.input_bar_size),
+                         sg.Button("...", key="a_protection_dice", size = GUI.extended_menue_button_size)],
+
                         [sg.Button("pull values\nfrom table", key="pull_left", size=GUI.button_size)],
                         [sg.Button("push values\nto table", key="push_left", size=GUI.button_size)],
                     ], size = GUI.column_size
@@ -112,7 +195,7 @@ def main(duell=True):
                             [sg.Text("Statistik kommt hier her")],
                             [sg.Text("defined monsters:")],
                             [sg.Table(values=GUI.monster_classes,
-                                      headings=["name", "hp", "to_hit", "dmg", "to_defense", "protection"],
+                                      headings=["name", "hp", "to_hit", "dmg", "to_defend", "protection"],
                                       auto_size_columns=False,
                                       col_widths=[15, 4, 7, 7,  7, 7],
                                       display_row_numbers=True,
@@ -125,25 +208,34 @@ def main(duell=True):
                                       #select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
                                       key="monsters"),
                              ],
-
-
                         ], size = GUI.column_size
                         )
+
     right = sg.Column  (
                         [
                             [sg.Text("Enter name:", size=GUI.enter_text_size),
                              sg.Input(default_text="Bob", key="b_name", size=GUI.input_bar_size)],
+
                             [sg.Text("Enter hp:", size=GUI.enter_text_size),
                              sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
                                        size=(22, 15), key="b_hp")],
+
                             [sg.Text("Enter (dice) hit possibility:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_to_hit", size=GUI.input_bar_size)],
+                             sg.Input(default_text="1d6+0", key="b_to_hit", size=GUI.input_bar_size),
+                             sg.Button("...", key="b_to_hit_dice", size = GUI.extended_menue_button_size)],
+
                             [sg.Text("Enter (dice) damage:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_dmg", size=GUI.input_bar_size)],
+                             sg.Input(default_text="1d6+0", key="b_dmg", size=GUI.input_bar_size),
+                             sg.Button("...", key="b_dmg_dice", size = GUI.extended_menue_button_size)],
+
                             [sg.Text("Enter (dice) defense possibility:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_to_defend", size=GUI.input_bar_size)],
+                             sg.Input(default_text="1d6+0", key="b_to_defend", size=GUI.input_bar_size),
+                             sg.Button("...", key="b_to_defend_dice", size = GUI.extended_menue_button_size)],
+
                             [sg.Text("Enter (dice) protection:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_protection", size=GUI.input_bar_size)],
+                             sg.Input(default_text="1d6+0", key="b_protection", size=GUI.input_bar_size),
+                             sg.Button("...", key="b_protection_dice", size = GUI.extended_menue_button_size)],
+
                             [sg.Button("pull values\nfrom table", key="pull_right", size=GUI.button_size)],
                             [sg.Button("push values\nto table", key="push_right", size=GUI.button_size)],
 
@@ -152,39 +244,35 @@ def main(duell=True):
     layout =    [
                     [left, middle, right],
                     #[sg.Output(size = (120, 20))],
+
+                    [sg.Text("Rundenzahl:"),
+                     sg.Slider([1, 100], orientation="h", default_value = 1, resolution=1,
+                                       size=(22, 15), key="rounds"),
+                     sg.Checkbox("Bis zum tod?", key = "inf_rounds")],
+
                     [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("save table\nto .csv", key="save_table", size=GUI.button_size),
                      sg.Button("load table\nfrom .csv", key="load_table", size=GUI.button_size), sg.Button("Delete table", key="delete_table", size=GUI.button_size),
-                     sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size)],
+                     sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size), sg.Button("test", key="test", size=GUI.button_size)],
                 ]
-
-    layout_pop =    [
-                        [sg.Text("Number of dice")],
-                        [sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
-                                       size=(22, 15), key="dice_nr")],
-                        [sg.Text("Sides per die")],
-                        [sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
-                                       size=(22, 15), key="dice_sides")],
-                        [sg.Text("Bonus value")],
-                        [sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
-                                       size=(22, 15), key="dice_bonus")],
-
-                        [sg.Text("Your dice is: .....", font = ("arial", 24), key  = "dice_result")],
-
-                        [sg.Ok(size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("Update", key = "update_dice", size = GUI.button_size)],
-
-                    ]
 
     GUI.window = sg.Window('fight_simulator', layout)
     GUI.window.finalize()
-    #GUI.values = GUI.window.read()[1]
+
+    alice = Monster(gui_number=0)
+    bob = Monster(gui_number=1)
 
     while True:
         event, values = GUI.window.read()
         GUI.values = values
         if event == sg.WIN_CLOSED or event == "Cancel":
             break
+        if event == "test":
+            for m in Game.zoo:
+                print(m.__dict__)
 
         if event == "Run":
+            alice.get_attributes_from_gui()
+            bob.get_attributes_from_gui()
             if duell:
                 alice = Game.zoo[0]
                 bob = Game.zoo[1]
@@ -307,13 +395,21 @@ def main(duell=True):
             GUI.monster_classes.pop(values["monsters"][0])
             GUI.window["monsters"].Update(GUI.monster_classes)
 
+        for prefix in   [
+                            "a_",
+                            "b_",
+                        ]:
+            for suffix in    [
+                                "to_hit",
+                                "to_defend",
+                                "dmg",
+                                "protection",
+                            ]:
 
+                compare_string = prefix + suffix + "_dice"
 
-
-
-
-
-
+                if event == compare_string:
+                    GUI.window[prefix + suffix].Update(dice_parameters(prefix, suffix))
 
 
 

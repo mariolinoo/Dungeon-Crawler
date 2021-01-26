@@ -8,7 +8,7 @@ dicelut={
     "5":"\u2684",
     "6":"\u2685",}
 
-def wurfel(dicestr="1d6", verbose=True, pretty=True):
+def wurfel(dicestr="1d6", verbose=True, pretty=True, data = False):
     """ Gibt Anzahl der Würfel und Seiten an; D == Reroll d == kein Reroll
         Verbose gibt Würfe aus
         Pretty gibt die Würfe mit Würfeln aus, wenn Würfel < 7
@@ -48,6 +48,11 @@ def wurfel(dicestr="1d6", verbose=True, pretty=True):
     looplist=list(range(dice))
     result =f"{dicestr}: "
     counter=0
+
+    # return für den Fall das man nicht würfeln will
+    if data:
+        return dice, reroll, sides, delta
+
     for d in looplist: #kann mit einer WhileSchleife auch erreicht werden
         counter+=1
         roll=random.randint(1,sides)
