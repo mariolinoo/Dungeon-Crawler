@@ -15,7 +15,6 @@ class Game:
     graveyard = []
     current_level = []
 
-
 class Monster:
     """Generic Monsterclass"""
     #Classatribute
@@ -48,13 +47,12 @@ class Monster:
 
         #print(self.__dict__)
 
-
 class GUI():
     window = None
-    column_size = (600,400)
+    column_size = (450,650)
     button_size = (7,2)
     extended_menue_button_size = (1, 1)
-    input_bar_size = (26,1)
+    input_bar_size = (15,1)
     enter_text_size = (25,1)
     values = None
     monster_classes = [
@@ -88,7 +86,6 @@ def line_plot (dataA, dataB, titlestring, xinch = 5, yinch = 5, res = 100):
     fig = plt.gcf()
     return fig
 
-
 def strike(attacker, defender):
     to_hit, to_hit_string = wurfel(attacker.to_hit)
     to_defend, to_defend_string = wurfel(defender.to_defend)
@@ -105,7 +102,6 @@ def strike(attacker, defender):
     dmg -= prot
     defender.hp -= dmg
     print(f"{defender.name} looses {dmg}hp and has {defender.hp}hp left")
-
 
 def fight(attacker, defender):
     strike(attacker, defender)
@@ -190,161 +186,205 @@ def dice_parameters(prefix, suffix):
 
     return
 
+def pull_fighter_from_table(side):
+    prefix = "a_" if side == "a" else "b_"
+    # überprüfuen ob im table etwas selektiert ist
+    if len(GUI.values["monsters"]) == 0:
+        sg.popup_ok("select a monster in the list first")
+        return
+    selected_row = GUI.values["monsters"][0]  # zeilennummer
+    print(selected_row)
+    fieldnames = ["name", "hp", "to_hit", "dmg", "to_defend", "protection"]
+    for i, field in enumerate(fieldnames):
+        print(GUI.monster_classes[selected_row][i])
+        GUI.window[prefix + field].update(GUI.monster_classes[selected_row][i])
 
-def main():
-    #ToDo Statistische Auswertung der Kämpfe, Dice zusammenstellen, Initivwert für Kämpfer
+def push_fighter_to_table(side):
+    prefix = "a_" if side == "a" else "b_"
+    fieldnames = ["name", "hp", "to_hit", "dmg", "to_defend", "protection"]
+    # überprüfen ob name schon in tabelle drin ist
+    myname = GUI.values[prefix + "name"]
+    already_inside = False
+    for y, line in enumerate(GUI.monster_classes):
+        if line[0] == myname:
+            already_inside = True
+            print("found it in table")
+            break  # found name, it's already in table
+    else:  # never have breaked out of loop
+        print("did not found in table")
+        already_inside = False
+    # update monster_classes
+    if already_inside:
+        for i, field in enumerate(fieldnames):
+            # print("y,i, field", y, i, field)
+            # print("zeile:", GUI.monster_classes[y])
+            # print("form-value:", values[prefix+field])
+            if type(GUI.monster_classes[y][i]) != str:
+                new_value = int(GUI.values[prefix + field])
+            else:
+                new_value = GUI.values[prefix + field]
+            GUI.monster_classes[y][i] = new_value
+    else:
+        append_list = []
+        for x, field in enumerate(fieldnames):
+            if type(GUI.values[prefix + field]) == str:
+                append_list.append(GUI.values[prefix + field])
+            else:
+                append_list.append(int(GUI.values[prefix + field]))
 
-    left = sg.Column(
-                    [
-                        [sg.Text("Enter name:", size = GUI.enter_text_size),
-                         sg.Input(default_text = "Alice", key = "a_name", size = GUI.input_bar_size)],
+        GUI.monster_classes.append(append_list)
 
-                        [sg.Text("Enter hp:", size = GUI.enter_text_size),
-                         sg.Slider([1, 100], orientation="h", default_value=10, resolution=1,
-                                   size=(22, 15), key="a_hp")],
+    # update table element
+    GUI.window["monsters"].Update(GUI.monster_classes)
 
-                        [sg.Text("Enter (dice) hit possibility:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_to_hit", size=GUI.input_bar_size),
-                         sg.Button("...", key="a_to_hit_dice", size = GUI.extended_menue_button_size)],
+def def_layout():
 
-                        [sg.Text("Enter (dice) damage:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_dmg", size=GUI.input_bar_size),
-                         sg.Button("...", key="a_dmg_dice", size = GUI.extended_menue_button_size)],
+    left = sg.Column([
+        [sg.Text("Enter name:", size=GUI.enter_text_size),
+         sg.Input(default_text="Alice", key="a_name", size=GUI.input_bar_size)],
 
-                        [sg.Text("Enter (dice) defense possibility:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_to_defend", size=GUI.input_bar_size),
-                         sg.Button("...", key="a_to_defend_dice", size = GUI.extended_menue_button_size)],
+        [sg.Text("Enter hp:", size=GUI.enter_text_size),
+         sg.Slider([1, 100], orientation="h", default_value=10, resolution=1,
+                   size=(15, 15), key="a_hp")],
 
-                        [sg.Text("Enter (dice) protection:", size = GUI.enter_text_size),
-                         sg.Input(default_text="1d6+0", key="a_protection", size=GUI.input_bar_size),
-                         sg.Button("...", key="a_protection_dice", size = GUI.extended_menue_button_size)],
+        [sg.Text("Enter (dice) hit possibility:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="a_to_hit", size=GUI.input_bar_size),
+         sg.Button("...", key="a_to_hit_dice", size=GUI.extended_menue_button_size)],
 
-                        [sg.Button("pull values\nfrom table", key="pull_left", size=GUI.button_size)],
-                        [sg.Button("push values\nto table", key="push_left", size=GUI.button_size)],
-                    ], size = GUI.column_size
-                    )
+        [sg.Text("Enter (dice) damage:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="a_dmg", size=GUI.input_bar_size),
+         sg.Button("...", key="a_dmg_dice", size=GUI.extended_menue_button_size)],
 
-    middle = sg.Column  (
-                        [
+        [sg.Text("Enter (dice) defense possibility:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="a_to_defend", size=GUI.input_bar_size),
+         sg.Button("...", key="a_to_defend_dice", size=GUI.extended_menue_button_size)],
 
-                            [sg.Text("Statistik kommt hier her")],
-                            [sg.Text("defined monsters:")],
-                            [sg.Table(values=GUI.monster_classes,
-                                      headings=["name", "hp", "to_hit", "dmg", "to_defend", "protection"],
-                                      auto_size_columns=False,
-                                      col_widths=[15, 4, 7, 7,  7, 7],
-                                      display_row_numbers=True,
-                                      vertical_scroll_only=True,
-                                      size=(80, 20),
-                                      alternating_row_color= "#AAAAAA",
-                                      justification="left",
-                                      enable_events=True,
-                                      select_mode = sg.TABLE_SELECT_MODE_BROWSE,
-                                      #select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
-                                      key="monsters"),
-                             ],
-                        ], size = GUI.column_size
-                        )
+        [sg.Text("Enter (dice) protection:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="a_protection", size=GUI.input_bar_size),
+         sg.Button("...", key="a_protection_dice", size=GUI.extended_menue_button_size)],
 
-    right = sg.Column  (
-                        [
-                            [sg.Text("Enter name:", size=GUI.enter_text_size),
-                             sg.Input(default_text="Bob", key="b_name", size=GUI.input_bar_size)],
+        [sg.Button("pull values\nfrom table", key="pull_a", size=GUI.button_size),
+         sg.Button("push values\nto table", key="push_a", size=GUI.button_size)],
 
-                            [sg.Text("Enter hp:", size=GUI.enter_text_size),
-                             sg.Slider([1, 100], orientation="h", default_value = 10, resolution=1,
-                                       size=(22, 15), key="b_hp")],
+        [sg.Text("Enter name:", size=GUI.enter_text_size),
+         sg.Input(default_text="Bob", key="b_name", size=GUI.input_bar_size)],
 
-                            [sg.Text("Enter (dice) hit possibility:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_to_hit", size=GUI.input_bar_size),
-                             sg.Button("...", key="b_to_hit_dice", size = GUI.extended_menue_button_size)],
+        [sg.Text("Enter hp:", size=GUI.enter_text_size),
+         sg.Slider([1, 100], orientation="h", default_value=10, resolution=1,
+                   size=(15, 15), key="b_hp")],
 
-                            [sg.Text("Enter (dice) damage:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_dmg", size=GUI.input_bar_size),
-                             sg.Button("...", key="b_dmg_dice", size = GUI.extended_menue_button_size)],
+        [sg.Text("Enter (dice) hit possibility:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="b_to_hit", size=GUI.input_bar_size),
+         sg.Button("...", key="b_to_hit_dice", size=GUI.extended_menue_button_size)],
 
-                            [sg.Text("Enter (dice) defense possibility:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_to_defend", size=GUI.input_bar_size),
-                             sg.Button("...", key="b_to_defend_dice", size = GUI.extended_menue_button_size)],
+        [sg.Text("Enter (dice) damage:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="b_dmg", size=GUI.input_bar_size),
+         sg.Button("...", key="b_dmg_dice", size=GUI.extended_menue_button_size)],
 
-                            [sg.Text("Enter (dice) protection:", size=GUI.enter_text_size),
-                             sg.Input(default_text="1d6+0", key="b_protection", size=GUI.input_bar_size),
-                             sg.Button("...", key="b_protection_dice", size = GUI.extended_menue_button_size)],
+        [sg.Text("Enter (dice) defense possibility:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="b_to_defend", size=GUI.input_bar_size),
+         sg.Button("...", key="b_to_defend_dice", size=GUI.extended_menue_button_size)],
 
-                            [sg.Button("pull values\nfrom table", key="pull_right", size=GUI.button_size)],
-                            [sg.Button("push values\nto table", key="push_right", size=GUI.button_size)],
+        [sg.Text("Enter (dice) protection:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="b_protection", size=GUI.input_bar_size),
+         sg.Button("...", key="b_protection_dice", size=GUI.extended_menue_button_size)],
 
-                        ], size=GUI.column_size
-    )
-    lower_left_column = sg.Column([
-                                #[sg.Output(size=(120, 30))],
-                            ])
+        [sg.Button("pull values\nfrom table", key="pull_b", size=GUI.button_size),
+         sg.Button("push values\nto table", key="push_b", size=GUI.button_size)],
+
+    ], size=GUI.column_size)
+
+    middle = sg.Column([
+        [sg.Text("defined monsters:")],
+        [sg.Table(values=GUI.monster_classes,
+                  headings=["name", "hp", "to_hit", "dmg", "to_defend", "protection"],
+                  auto_size_columns=False,
+                  col_widths=[15, 4, 7, 7, 7, 7],
+                  display_row_numbers=True,
+                  vertical_scroll_only=True,
+                  size=(80, 30),
+                  alternating_row_color="#AAAAAA",
+                  justification="left",
+                  enable_events=True,
+                  select_mode=sg.TABLE_SELECT_MODE_BROWSE,
+                  key="monsters"), ],
+    ], size = (600,650), vertical_alignment = "top")
 
     lower_right_column = sg.Column([
-                                [sg.Text("Fight "),
-                                 sg.Slider([1, 100], orientation="h", default_value=0, resolution=1,
-                                           size=(22, 15), key="fights"),
-                                 sg.Text("fights",  size=(20, 1)), ],
+        [sg.Text("Number of duells: "),
+         sg.Slider([1, 100], orientation="h", default_value=0, resolution=1, size=(22, 15), key="fights"),
+         sg.Text("Fights per duell: "),
+         sg.Slider([0, 100], orientation="h", default_value=0, resolution=1, size=(22, 15), key="game_rounds",
+                   enable_events=True),
+         sg.Text("to the death", key="game_round_text", size=(20, 1)), ],
 
-                                [sg.Text("fights "),
-                                 sg.Slider([0, 100], orientation="h", default_value=0, resolution=1,
-                                           size=(22, 15), key="game_rounds", enable_events=True),
-                                 sg.Text("to the death", key="game_round_text", size=(20, 1)), ],
+        [sg.Button("Fight", size=GUI.button_size), sg.Cancel(size=GUI.button_size),
+         sg.Button("save table\nto .csv", key="save_table", size=GUI.button_size),
+         sg.Button("load table\nfrom .csv", key="load_table", size=GUI.button_size),
+         sg.Button("Delete table", key="delete_table", size=GUI.button_size),
+         sg.Button("Delete\n entry", key="delete_entry", size=GUI.button_size), ],
+    ])
 
-                                [sg.Button("Run", size=GUI.button_size), sg.Cancel(size=GUI.button_size),],
-
-                                [sg.Button("save table\nto .csv", key="save_table", size=GUI.button_size),
-                                 sg.Button("load table\nfrom .csv", key="load_table", size=GUI.button_size),],
-
-                                 [sg.Button("Delete table", key="delete_table", size=GUI.button_size),
-                                 sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size),
-                                 sg.Button("test", key="test", size=GUI.button_size)],
-                            ])
     diagrams = sg.Column([
-                            [sg.Canvas(key = "CANVAS1"),],
-                        ])
-    layout =        [
-                        [left, middle, right],
-                        [diagrams, lower_right_column],
+        [sg.Canvas(key="CANVAS1"), ],
+    ])
 
-                    ]
+    return left, middle, lower_right_column, diagrams
 
-    GUI.window = sg.Window('fight_simulator', layout)
-    GUI.window.finalize()
 
-    alice = Monster(gui_number=0)
-    bob = Monster(gui_number=1)
+def main():
+    #ToDo Statistische Auswertung der Kämpfe, Initivwert für Kämpfer, eigenes Programm für Kämpfe
+
+    # Definition des GUI Layouts
+    left, middle, lower_right_column, diagrams= def_layout()
+
+    layout_command = sg.Column([
+        [left, middle],
+        [lower_right_column],
+    ])
+
+    layout = [
+        [layout_command, diagrams]
+    ]
+
+    GUI.window = sg.Window('main_window', layout)
+
+    fighterA = Monster(gui_number=0)
+    fighterB = Monster(gui_number=1)
 
     while True:
+
+        #Auslesen der durch das Fenster generierten Events und die Werte der Eingaben
         event, values = GUI.window.read()
+        #Abspeichern der Werte aus dem GUI für den globalen gebrauch
         GUI.values = values
+
+        #Wird Cancel gedrückt oder das Fenster manuell geschlossen
         if event == sg.WIN_CLOSED or event == "Cancel":
             break
-        if event == "test":
-            for m in Game.zoo:
-                print(m.__dict__)
 
-        if event == "Run":
+        #Startet einen Kampf nach den definierten Parameter
+        if event == "Fight":
             for i in range(40):
                 print("")
             print("Fight")
             #Battle
             dataA = []
             dataB = []
-            alice = Game.zoo[0]
-            bob = Game.zoo[1]
+            fighterA = Game.zoo[0]
+            fighterB = Game.zoo[1]
             battle_round = 0
             max_rounds = GUI.values["game_rounds"]
-            dataA.append(alice.hp)
-            dataB.append(bob.hp)
+            dataA.append(fighterA.hp)
+            dataB.append(fighterB.hp)
             GUI.window["fights"].Update(disabled = True)
 
             for i in range(int(GUI.values["fights"])):
-                alice.get_attributes_from_gui()
-                bob.get_attributes_from_gui()
+                fighterA.get_attributes_from_gui()
+                fighterB.get_attributes_from_gui()
                 while True:
                     battle_round += 1
-                    if alice.hp <= 0 or bob.hp <= 0:
+                    if fighterA.hp <= 0 or fighterB.hp <= 0:
                         break
                     if max_rounds != 0 and max_rounds != 100:
                         if battle_round > max_rounds:
@@ -352,72 +392,34 @@ def main():
                             break
                     print(f"Battle round : {battle_round}")
 
-                    fight(alice, bob)
-                    dataA.append(alice.hp)
-                    dataB.append(bob.hp)
+                    fight(fighterA, fighterB)
+                    dataA.append(fighterA.hp)
+                    dataB.append(fighterB.hp)
 
             GUI.window["fights"].Update(disabled = False)
             fig_fight_hp = line_plot(dataA, dataB, "hp over time", 10, 5, 100)
             fig_canvas_agg = draw_figure(GUI.window['CANVAS1'].TKCanvas, fig_fight_hp)
 
-            if alice.hp == bob.hp:
+            if fighterA.hp == fighterB.hp:
                 print("Draw")
-            elif alice.hp > bob.hp:
-                print(alice.name, " won")
+            elif fighterA.hp > fighterB.hp:
+                print(fighterA.name, " won")
             else:
-                print(bob.name, " won")
+                print(fighterB.name, " won")
 
+        #Pull left and right zieht aus der Haupttabelle einen Kämpfer in die entsprechende Position
+        if event == "pull_a":
+            pull_fighter_from_table("a")
 
-        if event in ( "pull_left", "pull_right"):
-            prefix = "a_" if event == "pull_left" else "b_"
-            # überprüfuen ob im table etwas selektiert ist
-            if len(values["monsters"]) == 0:
-                sg.popup_ok("select a monster in the list first")
-                continue
-            selected_row = values["monsters"][0] # zeilennummer
-            print(selected_row)
-            fieldnames = ["name", "hp", "to_hit", "dmg", "to_defend", "protection"]
-            for i, field in enumerate(fieldnames):
-                print(GUI.monster_classes[selected_row][i])
-                GUI.window[prefix+field].update(GUI.monster_classes[selected_row][i])
+        if event == "pull_b":
+            pull_fighter_from_table("b")
 
-        if event in ("push_left", "push_right"):
-            prefix = "a_" if event == "push_left" else "b_"
-            fieldnames = ["name", "hp", "to_hit", "dmg", "to_defend", "protection"]
-            # überprüfen ob name schon in tabelle drin ist
-            myname = values[prefix+"name"]
-            already_inside = False
-            for y, line in enumerate(GUI.monster_classes):
-                if line[0] == myname:
-                    already_inside = True
-                    print("found it in table")
-                    break # found name, it's already in table
-            else:  # never have breaked out of loop
-                print("did not found in table")
-                already_inside = False
-            # update monster_classes
-            if already_inside:
-                for i, field in enumerate(fieldnames):
-                    #print("y,i, field", y, i, field)
-                    #print("zeile:", GUI.monster_classes[y])
-                    #print("form-value:", values[prefix+field])
-                    if type(GUI.monster_classes[y][i]) != str:
-                        new_value = int(values[prefix+field])
-                    else:
-                        new_value = values[prefix+field]
-                    GUI.monster_classes[y][i] = new_value
-            else:
-                append_list = []
-                for x,field in enumerate(fieldnames):
-                    if type(values[prefix + field]) == str:
-                        append_list.append(values[prefix + field])
-                    else:
-                        append_list.append(int(values[prefix + field]))
+        #Push left und right speichert den zusammengestellten Kämper aus der entsprechenden Position in der Tabelle ab
+        if event == "push_a":
+            push_fighter_to_table("a")
 
-                GUI.monster_classes.append(append_list)
-
-            # update table element
-            GUI.window["monsters"].Update(GUI.monster_classes)
+        if event == "push_b":
+            push_fighter_to_table("b")
 
         if event == "load_table":
             load_file = sg.popup_get_file("Please select file to load in to the monster table")
@@ -436,7 +438,6 @@ def main():
                     GUI.monster_classes.append(clean_line)
 
             GUI.window["monsters"].Update(GUI.monster_classes)
-
 
         if event == "save_table":
             save_cmd = sg.popup_yes_no("Save to the default file?")
@@ -467,7 +468,7 @@ def main():
             GUI.monster_classes = []
             GUI.window["monsters"].Update(GUI.monster_classes)
 
-        if event == "delete_entrie":
+        if event == "delete_entry":
             # überprüfuen ob im table etwas selektiert ist
             if len(values["monsters"]) == 0:
                 sg.popup_ok("select a monster in the list first")
@@ -478,19 +479,9 @@ def main():
             GUI.monster_classes.pop(values["monsters"][0])
             GUI.window["monsters"].Update(GUI.monster_classes)
 
-        for prefix in   [
-                            "a_",
-                            "b_",
-                        ]:
-            for suffix in    [
-                                "to_hit",
-                                "to_defend",
-                                "dmg",
-                                "protection",
-                            ]:
-
+        for prefix in ["a_", "b_", ]:
+            for suffix in ["to_hit", "to_defend", "dmg", "protection",]:
                 compare_string = prefix + suffix + "_dice"
-
                 if event == compare_string:
                     GUI.window[prefix + suffix].Update(dice_parameters(prefix, suffix))
 
@@ -500,7 +491,7 @@ def main():
             else:
                 GUI.window["game_round_text"].Update("rounds")
 
-
+    GUI.window.close()
 
 
 if __name__=="__main__":
