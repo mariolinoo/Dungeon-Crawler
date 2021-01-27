@@ -82,6 +82,7 @@ def fight(attacker, defender):
     strike(defender, attacker)
     if attacker.hp <= 0:
         print(f"{attacker.name} is dead")
+        return
 
 def string_constructor(dd):
 
@@ -156,8 +157,8 @@ def dice_parameters(prefix, suffix):
     return
 
 
-def main(duell=True):
-    #ToDo Statistische Auswertung der Kämpfe, Dice zusammenstellen, Lösung für den kampf bis zum tod
+def main():
+    #ToDo Statistische Auswertung der Kämpfe, Dice zusammenstellen, Initivwert für Kämpfer
 
     left = sg.Column(
                     [
@@ -241,19 +242,29 @@ def main(duell=True):
 
                         ], size=GUI.column_size
     )
-    layout =    [
-                    [left, middle, right],
-                    #[sg.Output(size = (120, 20))],
+    lower_left_column = sg.Column([
+                                [sg.Output(size=(120, 30))],
+                            ])
 
-                    [sg.Text("Rundenzahl:"),
-                     sg.Slider([1, 100], orientation="h", default_value = 1, resolution=1,
-                                       size=(22, 15), key="rounds"),
-                     sg.Checkbox("Bis zum tod?", key = "inf_rounds")],
+    lower_right_column = sg.Column([
+                                [sg.Text("Fight "),
+                                 sg.Slider([0, 100], orientation="h", default_value=0, resolution=1,
+                                           size=(22, 15), key="game_rounds", enable_events=True),
+                                 sg.Text("to the death", key="game_round_text", size=(20, 1)), ],
 
-                    [sg.Button("Run", size = GUI.button_size), sg.Cancel(size = GUI.button_size), sg.Button("save table\nto .csv", key="save_table", size=GUI.button_size),
-                     sg.Button("load table\nfrom .csv", key="load_table", size=GUI.button_size), sg.Button("Delete table", key="delete_table", size=GUI.button_size),
-                     sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size), sg.Button("test", key="test", size=GUI.button_size)],
-                ]
+                                [sg.Button("Run", size=GUI.button_size), sg.Cancel(size=GUI.button_size),],
+
+                                [sg.Button("save table\nto .csv", key="save_table", size=GUI.button_size),
+                                 sg.Button("load table\nfrom .csv", key="load_table", size=GUI.button_size),],
+
+                                 [sg.Button("Delete table", key="delete_table", size=GUI.button_size),
+                                 sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size),
+                                 sg.Button("test", key="test", size=GUI.button_size)],
+                            ])
+    layout =        [
+                        [left, middle, right],
+                        [lower_left_column, lower_right_column],
+                    ]
 
     GUI.window = sg.Window('fight_simulator', layout)
     GUI.window.finalize()
@@ -271,19 +282,35 @@ def main(duell=True):
                 print(m.__dict__)
 
         if event == "Run":
+            for i in range(40):
+                print("")
+            print("Fight")
+            #Battle
+            alice = Game.zoo[0]
+            bob = Game.zoo[1]
             alice.get_attributes_from_gui()
             bob.get_attributes_from_gui()
-            if duell:
-                alice = Game.zoo[0]
-                bob = Game.zoo[1]
-                while (alice.hp > 0 and bob.hp > 0):
-                    fight(alice, bob)
-                if alice.hp > 0:
-                    print("Alice won")
-                else:
-                    print("Bob won")
-            else:
+            battle_round = 0
+            max_rounds = GUI.values["game_rounds"]
+            while True:
+                battle_round += 1
+                if alice.hp <= 0 or bob.hp <= 0:
+                    break
+                if max_rounds != 0 and max_rounds != 100:
+                    if battle_round > max_rounds:
+                        print("Battle ended by round limit")
+                        break
+                print(f"Battle round : {battle_round}")
+
                 fight(alice, bob)
+
+            if alice.hp == bob.hp:
+                print("Draw")
+            elif alice.hp > bob.hp:
+                print(alice.name, " won")
+            else:
+                print(bob.name, " won")
+
 
         if event in ( "pull_left", "pull_right"):
             prefix = "a_" if event == "pull_left" else "b_"
@@ -410,6 +437,13 @@ def main(duell=True):
 
                 if event == compare_string:
                     GUI.window[prefix + suffix].Update(dice_parameters(prefix, suffix))
+
+        if event == "game_rounds":
+            if int(values["game_rounds"]) in (0,100):
+                GUI.window["game_round_text"].Update("to the death")
+            else:
+                GUI.window["game_round_text"].Update("rounds")
+
 
 
 
