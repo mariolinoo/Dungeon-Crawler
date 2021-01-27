@@ -1,5 +1,12 @@
 from roll import wurfel
 import PySimpleGUI as sg
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
+import matplotlib
+
+matplotlib.use('TKAgg')
+
 sg.SetOptions(font = ("arial", 12))
 
 class Game:
@@ -54,6 +61,33 @@ class GUI():
             ["Alice", 10, "1d3+0","1d3+0","1d3+0","1d3+0"],
             ["Bob", 10, "1d3+0", "1d3+0", "1d3+0", "1d3+0"],
     ]
+
+def draw_figure(canvas, figure):
+    if canvas.children:
+        for child in canvas.winfo_children():
+            child.destroy()
+    figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+    figure_canvas_agg.draw()
+    figure_canvas_agg.get_tk_widget().pack(side = 'top', fill = 'both', expand = 1)
+
+    return figure_canvas_agg
+
+def line_plot (dataA, dataB, titlestring, xinch = 5, yinch = 5, res = 100):
+    """create a line plot diagramm"""
+    fi, ax = plt.subplots(figsize = (xinch, yinch), dpi = res)
+    if len(dataA) != len(dataB):
+        raise ValueError("dataA must have the same lenght as data B")
+    t = range(len(dataA))
+    ax.plot(t, dataA, label = "Player A")
+    ax.plot(t, dataB, label = "Player B")
+    ax.legend()
+    ax.grid()
+    ax.set(title = titlestring, xlabel = "All combatrounds", ylabel = "hp")
+    ax.axhline(y=0, color = 'r', linestyle = 'dashed', linewidth = 2)
+    ax.axhline(y=0, color = 'r', linestyle = 'dashed', linewidth = 2)
+    fig = plt.gcf()
+    return fig
+
 
 def strike(attacker, defender):
     to_hit, to_hit_string = wurfel(attacker.to_hit)
@@ -243,11 +277,16 @@ def main():
                         ], size=GUI.column_size
     )
     lower_left_column = sg.Column([
-                                [sg.Output(size=(120, 30))],
+                                #[sg.Output(size=(120, 30))],
                             ])
 
     lower_right_column = sg.Column([
                                 [sg.Text("Fight "),
+                                 sg.Slider([1, 100], orientation="h", default_value=0, resolution=1,
+                                           size=(22, 15), key="fights"),
+                                 sg.Text("fights",  size=(20, 1)), ],
+
+                                [sg.Text("fights "),
                                  sg.Slider([0, 100], orientation="h", default_value=0, resolution=1,
                                            size=(22, 15), key="game_rounds", enable_events=True),
                                  sg.Text("to the death", key="game_round_text", size=(20, 1)), ],
@@ -261,9 +300,13 @@ def main():
                                  sg.Button("Delete\n entrie", key="delete_entrie", size=GUI.button_size),
                                  sg.Button("test", key="test", size=GUI.button_size)],
                             ])
+    diagrams = sg.Column([
+                            [sg.Canvas(key = "CANVAS1"),],
+                        ])
     layout =        [
                         [left, middle, right],
-                        [lower_left_column, lower_right_column],
+                        [diagrams, lower_right_column],
+
                     ]
 
     GUI.window = sg.Window('fight_simulator', layout)
@@ -286,23 +329,36 @@ def main():
                 print("")
             print("Fight")
             #Battle
+            dataA = []
+            dataB = []
             alice = Game.zoo[0]
             bob = Game.zoo[1]
-            alice.get_attributes_from_gui()
-            bob.get_attributes_from_gui()
             battle_round = 0
             max_rounds = GUI.values["game_rounds"]
-            while True:
-                battle_round += 1
-                if alice.hp <= 0 or bob.hp <= 0:
-                    break
-                if max_rounds != 0 and max_rounds != 100:
-                    if battle_round > max_rounds:
-                        print("Battle ended by round limit")
-                        break
-                print(f"Battle round : {battle_round}")
+            dataA.append(alice.hp)
+            dataB.append(bob.hp)
+            GUI.window["fights"].Update(disabled = True)
 
-                fight(alice, bob)
+            for i in range(int(GUI.values["fights"])):
+                alice.get_attributes_from_gui()
+                bob.get_attributes_from_gui()
+                while True:
+                    battle_round += 1
+                    if alice.hp <= 0 or bob.hp <= 0:
+                        break
+                    if max_rounds != 0 and max_rounds != 100:
+                        if battle_round > max_rounds:
+                            print("Battle ended by round limit")
+                            break
+                    print(f"Battle round : {battle_round}")
+
+                    fight(alice, bob)
+                    dataA.append(alice.hp)
+                    dataB.append(bob.hp)
+
+            GUI.window["fights"].Update(disabled = False)
+            fig_fight_hp = line_plot(dataA, dataB, "hp over time", 10, 5, 100)
+            fig_canvas_agg = draw_figure(GUI.window['CANVAS1'].TKCanvas, fig_fight_hp)
 
             if alice.hp == bob.hp:
                 print("Draw")
