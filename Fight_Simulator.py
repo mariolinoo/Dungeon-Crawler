@@ -31,6 +31,8 @@ class Monster:
         self.dmg="1D5"
         self.to_defend="1D2"
         self.protection="1d2"
+        self.initiative="1d2"
+        self.reset_stat()
 
     def get_attributes_from_gui(self):
         prefix = "a_" if self.gui_number == 0 else "b_"
@@ -47,7 +49,15 @@ class Monster:
 
         #print(self.__dict__)
 
-class GUI():
+    def reset_stat(self):
+        self.stat_dict = {"hit": 0, "miss": 0, "penetration": 0, "no_penetration": 0, "first_strike":0,
+                          "second_strike":0, "got_hit": 0, "evaded": 0, "armor_penetrated": 0,
+                          "successfull_block": 0}
+        self.hp_list = []
+        self.dmg_dealt_list = []
+        self.dmg_recieved_list = []
+
+class GUI:
     window = None
     column_size = (450,650)
     button_size = (7,2)
@@ -70,40 +80,89 @@ def draw_figure(canvas, figure):
 
     return figure_canvas_agg
 
-def line_plot (dataA, dataB, titlestring, xinch = 5, yinch = 5, res = 100):
+def line_plot(fighterA, fighterB, titlestring, xinch = 5, yinch = 5, res = 100):
+    print(f"{fighterA.name} dmg list: {fighterA.dmg_dealt_list}")
+    print(f"{fighterB.name} dmg list: {fighterB.dmg_dealt_list}")
+
     """create a line plot diagramm"""
     fi, ax = plt.subplots(figsize = (xinch, yinch), dpi = res)
-    if len(dataA) != len(dataB):
-        raise ValueError("dataA must have the same lenght as data B")
-    t = range(len(dataA))
-    ax.plot(t, dataA, label = "Player A")
-    ax.plot(t, dataB, label = "Player B")
+    if len(fighterA.hp_list) != len(fighterB.hp_list):
+        raise ValueError(f"hp list from {fighterA.name} must have the same lenght as hp list from {fighterB.name}")
+    if len(fighterA.dmg_dealt_list) != len(fighterB.dmg_dealt_list):
+        raise ValueError(f"dmg list from {fighterA.name} must have the same lenght as dmg list from {fighterB.name}")
+    t = range(len(fighterA.hp_list))
+    ax.plot(t, fighterA.hp_list, label = f"{fighterA.name} hp")
+    ax.plot(t, fighterB.hp_list, label = f"{fighterB.name} hp")
+    ax.plot(t, fighterA.dmg_dealt_list, label = f"{fighterA.name} dmg")
+    ax.plot(t, fighterB.dmg_dealt_list, label = f"{fighterB.name} dmg")
     ax.legend()
     ax.grid()
-    ax.set(title = titlestring, xlabel = "All combatrounds", ylabel = "hp")
-    ax.axhline(y=0, color = 'r', linestyle = 'dashed', linewidth = 2)
+    ax.set(title = titlestring, xlabel = "All combatrounds", ylabel = "hp and dmg")
     ax.axhline(y=0, color = 'r', linestyle = 'dashed', linewidth = 2)
     fig = plt.gcf()
     return fig
+
+def append_stats(fighterA, fighterB, dmg_a, dmg_b):
+    fighterA.dmg_dealt_list.append(dmg_a)
+    fighterB.dmg_dealt_list.append(dmg_b)
+    fighterB.dmg_recieved_list.append(dmg_b)
+    fighterB.dmg_recieved_list.append(dmg_a)
+    fighterA.hp_list.append(fighterA.hp)
+    fighterB.hp_list.append(fighterB.hp)
+
 
 def strike(attacker, defender):
     to_hit, to_hit_string = wurfel(attacker.to_hit)
     to_defend, to_defend_string = wurfel(defender.to_defend)
     dmg, dmg_string = wurfel(attacker.dmg)
     prot, prot_string = wurfel(defender.protection)
+
     print(f"{attacker.name} swings with {to_hit_string} at {defender.name} with defense chance {to_defend_string}")
     if to_defend >= to_hit:
+        attacker.stat_dict["miss"] += 1
+        defender.stat_dict["evaded"] += 1
+        append_stats(attacker, defender, 0, 0)
         print("Attack failed")
         return
+
+    attacker.stat_dict["hit"] += 1
+    defender.stat_dict["got_hit"] += 1
     print(f"{attacker.name} hits with {dmg_string} {defender.name} with {prot_string} armor")
     if dmg <= prot:
         print("No damage")
+        attacker.stat_dict["no_penetration"] += 1
+        defender.stat_dict["successfull_block"] += 1
+        append_stats(attacker, defender, 0, 0)
         return
+
+    attacker.stat_dict["penetration"] += 1
+    defender.stat_dict["armor_penetrated"] += 1
+
     dmg -= prot
     defender.hp -= dmg
+
+    append_stats(attacker, defender, dmg, 0)
+
     print(f"{defender.name} looses {dmg}hp and has {defender.hp}hp left")
 
-def fight(attacker, defender):
+def fight(fighter_a, fighter_b):
+    init_a, init_b = 0, 0
+
+    while (init_a == init_b):
+        init_a = wurfel(fighter_a.initiative)
+        init_b = wurfel(fighter_b.initiative)
+
+    if init_a > init_b:
+        fighter_a.stat_dict["first_strike"] += 1
+        fighter_b.stat_dict["second_strike"] += 1
+        attacker, defender = fighter_a, fighter_b
+    else:
+        fighter_b.stat_dict["first_strike"] += 1
+        fighter_a.stat_dict["second_strike"] += 1
+        attacker, defender = fighter_b, fighter_a
+
+    print(attacker.name, "strikes first")
+
     strike(attacker, defender)
     if defender.hp <= 0:
         print(f"{defender.name} is dead")
@@ -263,6 +322,10 @@ def def_layout():
          sg.Input(default_text="1d6+0", key="a_protection", size=GUI.input_bar_size),
          sg.Button("...", key="a_protection_dice", size=GUI.extended_menue_button_size)],
 
+        [sg.Text("Enter (dice) initiative:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="a_initativ", size=GUI.input_bar_size),
+         sg.Button("...", key="a_initativ_dice", size=GUI.extended_menue_button_size)],
+
         [sg.Button("pull values\nfrom table", key="pull_a", size=GUI.button_size),
          sg.Button("push values\nto table", key="push_a", size=GUI.button_size)],
 
@@ -288,6 +351,10 @@ def def_layout():
         [sg.Text("Enter (dice) protection:", size=GUI.enter_text_size),
          sg.Input(default_text="1d6+0", key="b_protection", size=GUI.input_bar_size),
          sg.Button("...", key="b_protection_dice", size=GUI.extended_menue_button_size)],
+
+        [sg.Text("Enter (dice) initiative:", size=GUI.enter_text_size),
+         sg.Input(default_text="1d6+0", key="b_initativ", size=GUI.input_bar_size),
+         sg.Button("...", key="b_initativ_dice", size=GUI.extended_menue_button_size)],
 
         [sg.Button("pull values\nfrom table", key="pull_b", size=GUI.button_size),
          sg.Button("push values\nto table", key="push_b", size=GUI.button_size)],
@@ -327,16 +394,15 @@ def def_layout():
 
     diagrams = sg.Column([
         [sg.Canvas(key="CANVAS1"), ],
-    ])
+    ], vertical_alignment = "top")
 
     return left, middle, lower_right_column, diagrams
-
 
 def main():
     #ToDo Statistische Auswertung der Kämpfe, Initivwert für Kämpfer, eigenes Programm für Kämpfe
 
     # Definition des GUI Layouts
-    left, middle, lower_right_column, diagrams= def_layout()
+    left, middle, lower_right_column, diagrams = def_layout()
 
     layout_command = sg.Column([
         [left, middle],
@@ -365,18 +431,26 @@ def main():
 
         #Startet einen Kampf nach den definierten Parameter
         if event == "Fight":
+            #Abstand in der Ausgabe um Kämpfe unterscheiden zu können
             for i in range(40):
                 print("")
+
             print("Fight")
             #Battle
-            dataA = []
-            dataB = []
             fighterA = Game.zoo[0]
             fighterB = Game.zoo[1]
+            fighterA.reset_stat()
+            fighterB.reset_stat()
+            fighterA.get_attributes_from_gui()
+            fighterB.get_attributes_from_gui()
             battle_round = 0
             max_rounds = GUI.values["game_rounds"]
-            dataA.append(fighterA.hp)
-            dataB.append(fighterB.hp)
+            fighterA.hp_list.append(fighterA.hp)
+            fighterB.hp_list.append(fighterB.hp)
+            fighterA.dmg_dealt_list.append(0)
+            fighterB.dmg_dealt_list.append(0)
+            fighterA.dmg_recieved_list.append(0)
+            fighterB.dmg_recieved_list.append(0)
             GUI.window["fights"].Update(disabled = True)
 
             for i in range(int(GUI.values["fights"])):
@@ -393,11 +467,9 @@ def main():
                     print(f"Battle round : {battle_round}")
 
                     fight(fighterA, fighterB)
-                    dataA.append(fighterA.hp)
-                    dataB.append(fighterB.hp)
 
             GUI.window["fights"].Update(disabled = False)
-            fig_fight_hp = line_plot(dataA, dataB, "hp over time", 10, 5, 100)
+            fig_fight_hp = line_plot(fighterA, fighterB, "hp and dmg over time", 7.5, 3.75, 100)
             fig_canvas_agg = draw_figure(GUI.window['CANVAS1'].TKCanvas, fig_fight_hp)
 
             if fighterA.hp == fighterB.hp:
@@ -480,7 +552,7 @@ def main():
             GUI.window["monsters"].Update(GUI.monster_classes)
 
         for prefix in ["a_", "b_", ]:
-            for suffix in ["to_hit", "to_defend", "dmg", "protection",]:
+            for suffix in ["to_hit", "to_defend", "dmg", "protection", "initativ"]:
                 compare_string = prefix + suffix + "_dice"
                 if event == compare_string:
                     GUI.window[prefix + suffix].Update(dice_parameters(prefix, suffix))
