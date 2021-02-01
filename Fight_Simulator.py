@@ -80,7 +80,7 @@ def draw_figure(canvas, figure):
 
     return figure_canvas_agg
 
-def line_plot(fighterA, fighterB, titlestring, xinch = 5, yinch = 5, res = 100):
+def line_plot(fighterA, fighterB, titlestring, xinch = 10, yinch = 2.3, res = 100):
     print(f"{fighterA.name} dmg list: {fighterA.dmg_dealt_list}")
     print(f"{fighterB.name} dmg list: {fighterB.dmg_dealt_list}")
 
@@ -95,11 +95,40 @@ def line_plot(fighterA, fighterB, titlestring, xinch = 5, yinch = 5, res = 100):
     ax.plot(t, fighterB.hp_list, label = f"{fighterB.name} hp")
     ax.plot(t, fighterA.dmg_dealt_list, label = f"{fighterA.name} dmg")
     ax.plot(t, fighterB.dmg_dealt_list, label = f"{fighterB.name} dmg")
-    ax.legend()
+    ax.legend(loc = "upper right")
     ax.grid()
     ax.set(title = titlestring, xlabel = "All combatrounds", ylabel = "hp and dmg")
     ax.axhline(y=0, color = 'r', linestyle = 'dashed', linewidth = 2)
     fig = plt.gcf()
+    return fig
+
+def bar_graph_plot(rounds = 0, xinch = 7, yinch = 9, res = 100):
+
+    fighterA = Game.zoo[0]
+    fighterB = Game.zoo[1]
+
+    print("Rounds: ", rounds)
+    print("FighterA: ", fighterA.stat_dict)
+    print("Fighterb: ", fighterB.stat_dict)
+
+    labels = list([string.replace("_", "\n") for string in fighterA.stat_dict.keys()])
+    fighterA_val = list(fighterA.stat_dict.values())
+    fighterB_val = list(fighterB.stat_dict.values())
+
+    x = np.arange(len(labels))
+    width = 0.35
+
+    fig, ax = plt.subplots(figsize = (xinch, yinch), dpi = res)
+    ax.bar(x - width / 2, fighterA_val, width, label=fighterA.name)
+    ax.bar(x + width / 2, fighterB_val, width, label=fighterB.name)
+
+    ax.set_ylabel('Scores')
+    ax.set_title(f'Fight scores for {fighterA.name} and {fighterB.name}')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation = "vertical")
+
+    ax.legend()
+
     return fig
 
 def append_stats(fighterA, fighterB, dmg_a, dmg_b):
@@ -392,25 +421,31 @@ def def_layout():
          sg.Button("Delete\n entry", key="delete_entry", size=GUI.button_size), ],
     ])
 
-    diagrams = sg.Column([
+    diagrams1 = sg.Column([
+        [sg.Canvas(key="CANVAS2"),],
+        [sg.Canvas(key="CANVAS3"), ],
+    ], vertical_alignment = "top")
+    diagrams2 = sg.Column([
         [sg.Canvas(key="CANVAS1"), ],
+
     ], vertical_alignment = "top")
 
-    return left, middle, lower_right_column, diagrams
+    return left, middle, lower_right_column, diagrams1, diagrams2
 
 def main():
     #ToDo Statistische Auswertung der Kämpfe, Initivwert für Kämpfer, eigenes Programm für Kämpfe
 
     # Definition des GUI Layouts
-    left, middle, lower_right_column, diagrams = def_layout()
+    left, middle, lower_right_column, diagrams1, diagrams2 = def_layout()
 
     layout_command = sg.Column([
+        [diagrams2],
         [left, middle],
         [lower_right_column],
     ])
 
     layout = [
-        [layout_command, diagrams]
+        [layout_command, diagrams1]
     ]
 
     GUI.window = sg.Window('main_window', layout)
@@ -452,6 +487,7 @@ def main():
             fighterA.dmg_recieved_list.append(0)
             fighterB.dmg_recieved_list.append(0)
             GUI.window["fights"].Update(disabled = True)
+            rounds = 0
 
             for i in range(int(GUI.values["fights"])):
                 fighterA.get_attributes_from_gui()
@@ -467,10 +503,13 @@ def main():
                     print(f"Battle round : {battle_round}")
 
                     fight(fighterA, fighterB)
+                    rounds += 1
 
             GUI.window["fights"].Update(disabled = False)
-            fig_fight_hp = line_plot(fighterA, fighterB, "hp and dmg over time", 7.5, 3.75, 100)
+            fig_fight_hp = line_plot(fighterA, fighterB, "hp and dmg over fight actions")
             fig_canvas_agg = draw_figure(GUI.window['CANVAS1'].TKCanvas, fig_fight_hp)
+            fig_stats_fighter = bar_graph_plot(rounds)
+            fig_canvas2_agg = draw_figure(GUI.window['CANVAS2'].TKCanvas, fig_stats_fighter)
 
             if fighterA.hp == fighterB.hp:
                 print("Draw")
