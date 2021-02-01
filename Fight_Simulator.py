@@ -100,7 +100,7 @@ def line_plot(fighterA, fighterB, titlestring, xinch = 10, yinch = 2.3, res = 10
     ax.set(title = titlestring, xlabel = "All combatrounds", ylabel = "hp and dmg")
     ax.axhline(y=0, color = 'r', linestyle = 'dashed', linewidth = 2)
     fig = plt.gcf()
-    return fig
+
 
 def bar_graph_plot(rounds = 0, xinch = 7, yinch = 9, res = 100):
 
@@ -129,7 +129,8 @@ def bar_graph_plot(rounds = 0, xinch = 7, yinch = 9, res = 100):
 
     ax.legend()
 
-    return fig
+    #muss nur einmal aufgerufen werden, aber kA wieso ... für lineplot muss kein extra aufruf erfolgen
+    plt.show()
 
 def append_stats(fighterA, fighterB, dmg_a, dmg_b):
     fighterA.dmg_dealt_list.append(dmg_a)
@@ -506,10 +507,9 @@ def main():
                     rounds += 1
 
             GUI.window["fights"].Update(disabled = False)
-            fig_fight_hp = line_plot(fighterA, fighterB, "hp and dmg over fight actions")
-            fig_canvas_agg = draw_figure(GUI.window['CANVAS1'].TKCanvas, fig_fight_hp)
-            fig_stats_fighter = bar_graph_plot(rounds)
-            fig_canvas2_agg = draw_figure(GUI.window['CANVAS2'].TKCanvas, fig_stats_fighter)
+            line_plot(fighterA, fighterB, "hp and dmg over fight actions")
+            bar_graph_plot(rounds)
+
 
             if fighterA.hp == fighterB.hp:
                 print("Draw")
